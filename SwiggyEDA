@@ -1,0 +1,294 @@
+select * from Restaurants
+select * from orders
+select * from order_details
+select * from users
+select * from Menu
+select * from Food
+select * from Delivery_partner
+
+-------Merged the relevant columns in the dataset to form a combined dataset.
+
+SELECT
+  sr.Restaurant_name, 
+  sod.Food_id, 
+  sf.Food_name,
+  sf.Type,
+  su.Name 
+FROM Orders as so
+      INNER JOIN Restaurants as sr on so.Restaurant_id = sr.Restaurant_id
+      INNER JOIN Order_details as sod on so.Order_id = sod.Order_id
+      INNER JOIN Food as sf on sf.Food_id = sod.Food_id
+      RIGHT JOIN Users as su on su.User_id = so.user_id
+
+
+-------Restaurants that get the most orders.
+
+SELECT 
+  sr.Restaurant_Name, 
+  COUNT(Order_id) as Number_of_Orders 
+FROM Orders as so
+    INNER JOIN Restaurants as sr on sr. Restaurant_id = so.Restaurant_id
+GROUP BY Restaurant_Name
+ORDER BY Number_of_Orders desc 
+
+--------Restaurants that have the maximum order amount.
+
+SELECT
+  sr.Restaurant_name,
+  MAX(Amount) as Amount 
+FROM Orders as so
+     INNER JOIN Restaurants as sr on sr. Restaurant_id = so.Restaurant_id
+GROUP BY Restaurant_Name
+ORDER BY Amount desc
+
+------Customers(Users) who have never ordered.
+
+SELECT
+  User_id, 
+  Name 
+FROM Users as su
+where User_id NOT IN
+                 (select user_id from orders as so where su.user_id = so.User_id)
+
+------Month-Wise Number of Orders.
+
+SELECT
+  DATENAME(Month, Date) as Month, 
+  COUNT(Order_id) as Number_of_orders 
+FROM Orders
+WHERE DATENAME(Month, Date) is not NULL
+GROUP BY DATENAME(Month, Date)
+ORDER BY Number_of_orders desc
+
+------Which Type of pizza is More Preferred?
+
+SELECT 
+  sf. Type, 
+  COUNT(so.Order_id) as Total_Type  
+FROM Food as sf 
+     INNER JOIN Order_details as sod on sf.Food_id = sod.Food_id
+     INNER JOIN Orders as so on sod.Order_id = so.Order_id
+WHERE sf.Food_id in ('1', '2') 
+GROUP BY Sf.Type
+
+-------Most Ordered Food item across all restaurants.
+
+SELECT 
+  Food_Name, 
+  COUNT(*) as TotalFoodItems 
+FROM Food as sf 
+     INNER JOIN Order_details as sod on sf.Food_id = sod.Food_id
+     INNER JOIN Orders as so on sod.Order_id = so.Order_id
+WHERE Food_Name is not null
+GROUP BY Food_Name
+ORDER BY TotalFoodItems desc;
+
+--------Most sold food item from each Restaurant.
+
+SELECT
+  Restaurant_Name, 
+  Food_Name, 
+  Amount,
+  FIRST_VALUE(Food_Name) over (Partition by Restaurant_name order by Amount desc) as Most_Sold_Item
+FROM Orders as so
+     INNER JOIN Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
+     INNER JOIN Order_details as sod on so.Order_id = sod.Order_id
+     INNER JOIN Food as sf on sod.Food_id = sf.Food_id
+--GROUP BY Restaurant_Name, Food_Name, Amount
+--ORDER BY Most_Sold_Item
+
+
+-------Average Price Per dish.
+
+SELECT 
+  Food_Name, 
+  AVG(sm.Price) as Average_Price  
+FROM Food as sf
+     INNER JOIN Menu as sm on sf.Food_id = sm.Food_id
+GROUP BY Food_Name
+ORDER BY Average_Price desc
+
+------Top Restaurants in terms of the Number of Orders for a Given Month.
+
+SELECT 
+  sr.Restaurant_Name, 
+  DATENAME(Month, Date) as Month, 
+  COUNT(Order_id) as Number_of_orders 
+FROM Orders as so
+     INNER JOIN Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
+WHERE DATENAME(Month, Date) is not NULL
+GROUP BY DATENAME(Month, Date), Restaurant_Name 
+ORDER BY Number_of_orders desc
+
+------Orders with order details for a particular customer in a particular date range.
+
+SELECT 
+  su.Name, 
+  sr.Restaurant_Name, 
+  so.order_id, 
+  sf.Food_Name, 
+  so.Amount 
+FROM Orders as so
+     INNER JOIN Users as su on so.User_id = su.user_id
+     INNER JOIN Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
+     INNER JOIN Order_details as sod on so.Order_id = sod.Order_id
+     INNER JOIN Food as sf on sod.Food_id = sf.Food_id
+WHERE so.Date in ('2022-05-30', '2022-07-31')
+
+------Restaurants with Maximum repeated customers.
+--SELECT 
+    sr.Restaurant_Name, 
+    COUNT(*) as Number_of_Customer
+FROM 
+--(
+--Select Restaurant_id,  User_id, count(*) as Visit from Orders
+--Group by User_id, Restaurant_Id
+--Having count(*) > 1
+--)so
+--Join Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
+----join Order_details as sod on so.Order_id = sod.Order_id
+--Group By User_id, Restaurant_Name
+
+SELECT 
+  sr.Restaurant_Name, 
+  User_id, 
+  COUNT(*) as Visits 
+FROM Orders as o
+     INNER JOIN Restaurants as sr on o.Restaurant_Id = sr.Restaurant_Id
+GROUP BY sr.Restaurant_Id, sr.Restaurant_Name, User_id
+
+
+------Most loyal Customer.
+
+SELECT 
+  sr.Restaurant_Name, 
+  s.Restaurant_id, 
+  s. user_id, 
+  COUNT(*) as Total_Loyal_Customer
+FROM (
+        SELECT
+            Restaurant_id, 
+            user_id, 
+            COUNT(*) as Visit 
+        FROM Orders
+        GROUP BY Restaurant_Id, User_id
+        HAVING COUNT(*)> 1
+) s
+INNER JOIN Restaurants as sr on s.Restaurant_id = sr.Restaurant_Id
+GROUP BY s.Restaurant_Id, sr.Restaurant_Name, s.User_id
+ORDER BY Total_Loyal_Customer desc
+
+
+-------Most Loyal customer for all Restaurants/ Restaurants with MAX Repeated customers. 
+
+With temp as 
+( 
+	SELECT
+      Restaurant_id, 
+      User_id, 
+      COUNT(*) as Visits 
+FROM Orders as so
+GROUP BY Restaurant_id, user_id
+)
+
+SELECT
+    Restaurant_name, 
+    Name as 'Loyal Customer', 
+    Visits 
+FROM temp t
+INNER JOIN Restaurants as sr on t.Restaurant_Id = sr.Restaurant_Id
+INNER JOIN Users as su on t.User_id = su.User_Id
+WHERE Visits = (Select MAX(Visits) From temp t1 where t.Restaurant_Id = t1.Restaurant_Id)
+
+-------Users and the Food item they purchased the most.
+
+With temp as
+(
+	SELECT
+      User_id, 
+      sod.Food_id, 
+      COUNT(*) as Frequent_Order 
+FROM Orders as so
+	   INNER JOIN Order_details as sod on so.Order_id = sod.Order_id
+GROUP BY User_id, sod.Food_id
+)
+
+SELECT 
+    su.Name, 
+    Food_Name, 
+    Frequent_Order 
+FROM temp t
+     INNER JOIN Food as sf on t.Food_Id = sf.Food_id
+     INNER JOIN Users as su on t.User_id = su.User_id
+WHERE t.Frequent_Order = (Select MAX(Frequent_Order) from temp t1 where t1.User_id = t.User_id) 
+
+
+--------Restaurants with monthly sales greater than(>) X for.
+
+SELECT 
+    o.Restaurant_Id, 
+    sr.Restaurant_Name, 
+    MONTH(Date) as Month,
+    SUM(Amount) as Revenue
+FROM Orders as o 
+     INNER JOIN Restaurants as sr on o.Restaurant_Id = sr.Restaurant_Id
+WHERE Month(Date) = 6
+GROUP BY o.Restaurant_Id, sr.Restaurant_Name, MONTH(Date)
+ORDER BY Revenue desc
+--Having SUM(Amount) > 2000
+
+
+--------Month-over-month revenue growth of a restaurant.
+
+With Sales AS
+(
+	SELECT 
+      DATENAME(Month, Date) as Month, 
+      sr.Restaurant_Name, 
+      SUM(Amount)as Revenue
+	FROM Orders as o
+	INNER JOIN Restaurants sr on o.Restaurant_Id = sr.Restaurant_Id
+	WHERE sr.Restaurant_Id = 1
+	GROUP BY sr.Restaurant_Name, DATENAME(Month, Date)
+)
+
+SELECT
+    Restaurant_Name, 
+    Month, 
+    Revenue, 
+    ((Revenue- PreviousMonthRevenue)/PreviousMonthRevenue) * 100 as RevenueGrowth 
+FROM
+(
+	SELECT
+     Restaurant_Name, 
+     Month, 
+     Revenue, 
+     LAG(Revenue, 1) Over(Order by Revenue) as PreviousMonthRevenue 
+FROM Sales
+) t
+
+
+--------Month Over Month Revenue growth of Swiggy.
+
+with Sales AS
+	(
+		SELECT 
+        DATENAME(Month, Date) as Month, 
+        SUM(Amount) as Revenue 
+		FROM Orders
+		WHERE DATENAME(Month, Date) is not null
+		GROUP BY DATENAME(Month, Date)
+		--Order By DATENAME(Month, Date) desc
+	)
+
+SELECT
+    Month, ((Revenue- PreviousMonthRevenue)/PreviousMonthRevenue) * 100 as RevenueGrowth 
+FROM
+(
+	SELECT
+      Month,
+      Revenue, 
+      LAG(Revenue, 1) Over(Order by Revenue) as PreviousMonthRevenue from Sales
+) t
+
+
