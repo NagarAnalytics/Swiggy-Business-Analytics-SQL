@@ -7,7 +7,6 @@ select * from Food
 select * from Delivery_partner
 
 -------Merged the relevant columns in the dataset to form a combined dataset.
-
 SELECT
   sr.Restaurant_name, 
   sod.Food_id, 
@@ -22,7 +21,6 @@ FROM Orders as so
 
 
 -------Restaurants that get the most orders.
-
 SELECT 
   sr.Restaurant_Name, 
   COUNT(Order_id) as Number_of_Orders 
@@ -32,17 +30,15 @@ GROUP BY Restaurant_Name
 ORDER BY Number_of_Orders desc 
 
 --------Restaurants that have the maximum order amount.
-
 SELECT
   sr.Restaurant_name,
   MAX(Amount) as Amount 
 FROM Orders as so
      INNER JOIN Restaurants as sr on sr. Restaurant_id = so.Restaurant_id
 GROUP BY Restaurant_Name
-ORDER BY Amount desc
+ORDER BY Amount DESC
 
 ------Customers(Users) who have never ordered.
-
 SELECT
   User_id, 
   Name 
@@ -58,10 +54,9 @@ SELECT
 FROM Orders
 WHERE DATENAME(Month, Date) is not NULL
 GROUP BY DATENAME(Month, Date)
-ORDER BY Number_of_orders desc
+ORDER BY Number_of_orders DESC
 
 ------Which Type of pizza is More Preferred?
-
 SELECT 
   sf. Type, 
   COUNT(so.Order_id) as Total_Type  
@@ -72,7 +67,6 @@ WHERE sf.Food_id in ('1', '2')
 GROUP BY Sf.Type
 
 -------Most Ordered Food item across all restaurants.
-
 SELECT 
   Food_Name, 
   COUNT(*) as TotalFoodItems 
@@ -84,7 +78,6 @@ GROUP BY Food_Name
 ORDER BY TotalFoodItems desc;
 
 --------Most sold food item from each Restaurant.
-
 SELECT
   Restaurant_Name, 
   Food_Name, 
@@ -99,7 +92,6 @@ FROM Orders as so
 
 
 -------Average Price Per dish.
-
 SELECT 
   Food_Name, 
   AVG(sm.Price) as Average_Price  
@@ -118,10 +110,9 @@ FROM Orders as so
      INNER JOIN Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
 WHERE DATENAME(Month, Date) is not NULL
 GROUP BY DATENAME(Month, Date), Restaurant_Name 
-ORDER BY Number_of_orders desc
+ORDER BY Number_of_orders DESC
 
 ------Orders with order details for a particular customer in a particular date range.
-
 SELECT 
   su.Name, 
   sr.Restaurant_Name, 
@@ -135,20 +126,13 @@ FROM Orders as so
      INNER JOIN Food as sf on sod.Food_id = sf.Food_id
 WHERE so.Date in ('2022-05-30', '2022-07-31')
 
+
 ------Restaurants with Maximum repeated customers.
---SELECT 
+SELECT 
     sr.Restaurant_Name, 
     COUNT(*) as Number_of_Customer
 FROM 
---(
---Select Restaurant_id,  User_id, count(*) as Visit from Orders
---Group by User_id, Restaurant_Id
---Having count(*) > 1
---)so
---Join Restaurants as sr on so.Restaurant_Id = sr.Restaurant_Id
-----join Order_details as sod on so.Order_id = sod.Order_id
---Group By User_id, Restaurant_Name
-
+	
 SELECT 
   sr.Restaurant_Name, 
   User_id, 
@@ -159,7 +143,6 @@ GROUP BY sr.Restaurant_Id, sr.Restaurant_Name, User_id
 
 
 ------Most loyal Customer.
-
 SELECT 
   sr.Restaurant_Name, 
   s.Restaurant_id, 
@@ -201,7 +184,6 @@ INNER JOIN Users as su on t.User_id = su.User_Id
 WHERE Visits = (Select MAX(Visits) From temp t1 where t.Restaurant_Id = t1.Restaurant_Id)
 
 -------Users and the Food item they purchased the most.
-
 With temp as
 (
 	SELECT
@@ -224,7 +206,6 @@ WHERE t.Frequent_Order = (Select MAX(Frequent_Order) from temp t1 where t1.User_
 
 
 --------Restaurants with monthly sales greater than(>) X for.
-
 SELECT 
     o.Restaurant_Id, 
     sr.Restaurant_Name, 
@@ -234,7 +215,7 @@ FROM Orders as o
      INNER JOIN Restaurants as sr on o.Restaurant_Id = sr.Restaurant_Id
 WHERE Month(Date) = 6
 GROUP BY o.Restaurant_Id, sr.Restaurant_Name, MONTH(Date)
-ORDER BY Revenue desc
+ORDER BY Revenue DESC
 --Having SUM(Amount) > 2000
 
 
